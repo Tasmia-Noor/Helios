@@ -4,6 +4,7 @@ import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as stepfunctions from 'aws-cdk-lib/aws-stepfunctions';
 import * as tasks from 'aws-cdk-lib/aws-stepfunctions-tasks';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
+import { CodePipeline, CodePipelineSource, ShellStep } from 'aws-cdk-lib/pipelines';
 
 export class HeliosTestStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -46,8 +47,8 @@ export class HeliosTestStack extends cdk.Stack {
       table: kycInternal,
       item: {
         kycId: tasks.DynamoAttributeValue.fromString('1234567890'),
-        name: tasks.DynamoAttributeValue.fromString('test name success'),
-        status: tasks.DynamoAttributeValue.fromString('test status success'),
+        name: tasks.DynamoAttributeValue.fromString('helios pipeline test name success'),
+        status: tasks.DynamoAttributeValue.fromString('helios pipeline test status success'),
       },
     });
 
@@ -60,5 +61,15 @@ export class HeliosTestStack extends cdk.Stack {
       )
     });
 
+    //create pipeline
+    const pipeline = new CodePipeline(this, 'pipeline', {
+      pipelineName: 'testPipeline',
+      synth: new ShellStep('synth', {
+        input: CodePipelineSource.gitHub('Tasmia-Noor/Helios', 'main'),
+        commands: ['npm ci',
+          'npm run build',
+          'npx cdk synth']
+      })
+    })
   }
 }
