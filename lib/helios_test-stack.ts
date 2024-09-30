@@ -32,6 +32,16 @@ export class HeliosTestStack extends cdk.Stack {
     `),
     });
 
+    const testPipelineLambda = new lambda.Function(this, 'testPipelineLambda', {
+      runtime: lambda.Runtime.NODEJS_18_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromInline(`
+        exports.handler = (event, context, callback) => {
+            callback(null, "Hello pipeline!");
+        };
+    `),
+    });
+
     // Create Step Function states
     const getItemState = new tasks.DynamoGetItem(this, 'GetItem', {
       table: subjects,
@@ -40,6 +50,11 @@ export class HeliosTestStack extends cdk.Stack {
 
     const updateStatusState = new tasks.LambdaInvoke(this, 'UpdateStatus', {
       lambdaFunction: updateStatusLambda,
+      //payload
+    });
+
+    const testPipelineState = new tasks.LambdaInvoke(this, 'testPipeline', {
+      lambdaFunction: testPipelineLambda,
       //payload
     });
 
@@ -57,6 +72,7 @@ export class HeliosTestStack extends cdk.Stack {
       definitionBody: stepfunctions.DefinitionBody.fromChainable(
         getItemState
           .next(updateStatusState)
+          .next(testPipelineState)
           .next(putItemState)
       )
     });
